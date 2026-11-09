@@ -1,0 +1,125 @@
+---
+id: core
+title: Core Concepts
+sidebar_position: 1
+---
+
+import ArchitectureDiagram from '@site/src/components/ArchitectureDiagram';
+
+# Core Concepts
+
+## Architecture
+
+<ArchitectureDiagram />
+
+oncebox has two independent halves that share one starter:
+
+- **Outbox** (publisher side) - stores events in `outbox_events` in your transaction and publishes them to the broker
+  from background pollers.
+- **Inbox** (consumer side) - records the ids of consumed events in `inbox_events` and skips an event whose id is
+  already there.
+
+A service can enable either half or both: `oncebox.outbox.enabled` and `oncebox.inbox.enabled`.
+
+## Event lifecycle
+
+1. Your code stores one event or a batch of events through `OutboxPublisher` or `@OutboxPublish`, in the same
+   transaction as the business change.
+2. A poller for that event type captures a batch of due events and marks them `IN_PROCESS`.
+3. The batch is sent to the broker, and the sender waits for the broker's acknowledgement:
+   - acknowledged events are marked `PROCESSED`;
+   - failed events go back to `PENDING` with a later `next_retry_at`, or to `FAILED` once retries are exhausted.
+4. With the DLQ enabled, `FAILED` events are moved to `outbox_dlq_events` in one transaction.
+5. `PROCESSED` events are deleted after their TTL.
+
+On the consumer side, with an idempotent consumer:
+
+1. The listener receives an event or a batch of events.
+2. The consumer checks the ids against the inbox (and the cache, if enabled):
+   - already consumed events are skipped without an exception, and for a batch only the new events reach your code;
+   - new events are recorded and your operation runs.
+
+Whether the record and the operation are one transaction depends on the consumer, see
+[Delivery Guarantees](guarantees.md#inbox-guarantees).
+
+## Polling by event type
+
+Every event type declared under `oncebox.outbox.events` gets its own scheduled task with its own batch size, polling
+strategy, retry count and backoff. Types are processed in parallel on a shared thread pool
+(`oncebox.thread-pool-size`), so a slow or failing type does not hold back the others.
+
+A poller selects events of its type that are `PENDING` and due (`next_retry_at` is not in the future), oldest
+`next_retry_at` first.
+
+## Batch capture
+
+Capturing a batch is a single statement per dialect that selects due rows with `FOR UPDATE SKIP LOCKED` and moves them
+to `IN_PROCESS`. On PostgreSQL:
+
+```sql
+WITH to_lock AS (
+    SELECT id FROM outbox_events
+    WHERE event_type = ? AND status = 'PENDING' AND next_retry_at <= clock_timestamp()
+    ORDER BY next_retry_at
+    LIMIT ?
+    FOR UPDATE SKIP LOCKED
+)
+UPDATE outbox_events
+    SET status = 'IN_PROCESS', updated_at = clock_timestamp(), lock_token = ?
+WHERE id IN (SELECT id FROM to_lock)
+RETURNING *
+```
+
+`SKIP LOCKED` lets several instances poll the same table at once: each takes a disjoint batch instead of waiting for
+the rows another instance holds. The capture transaction commits before the batch is sent, so no database
+transaction stays open while the broker is called.
+
+## Fencing with a lock token
+
+Each capture writes a fresh random `lock_token` into the rows it takes. The outcome of the batch (`PROCESSED`, a retry,
+or `FAILED`) is written only to rows that still carry that token.
+
+This matters when a batch outlives [stuck event recovery](processing.mdx#stuck-event-recovery): the rows are returned to
+`PENDING`, another poller captures them with a new token, and the first poller finally finishes. Its late outcome no
+longer matches the token and is not written, so it cannot overwrite the newer attempt. The first poller logs how many
+outcomes were dropped.
+
+## The database clock
+
+Every timestamp - `created_at`, `updated_at`, `next_retry_at`, `moved_at`, `consumed_at` - is produced by the database,
+and every age check (retry due, stuck threshold, TTL) is compared against the database clock:
+
+| Database   | Clock                | Column type                          |
+|------------|----------------------|--------------------------------------|
+| PostgreSQL | `clock_timestamp()`  | `TIMESTAMPTZ`                        |
+| MySQL      | `UTC_TIMESTAMP(6)`   | `DATETIME(6)`, UTC wall time         |
+| Oracle     | `SYSTIMESTAMP`       | `TIMESTAMP WITH TIME ZONE`           |
+
+The JVM only passes durations (a retry delay, a TTL). Clock skew between application instances, or between an
+instance and the database, cannot make an event due too early, recover a batch that is still being sent, or delete
+an event before its TTL.
+
+## Background jobs
+
+Besides one poller per event type, the outbox runs:
+
+| Job                    | Runs when                         | What it does                                                     |
+|------------------------|-----------------------------------|------------------------------------------------------------------|
+| Stuck recovery         | always                            | Returns `IN_PROCESS` events older than the threshold to `PENDING` |
+| Outbox cleanup         | `oncebox.outbox.clean-up.enabled` | Deletes `PROCESSED` events older than the TTL                     |
+| DLQ transfer to        | `oncebox.outbox.dlq.enabled`      | Moves `FAILED` events to `outbox_dlq_events`                      |
+| DLQ transfer from      | `oncebox.outbox.dlq.enabled`      | Moves `TO_RETRY` DLQ events back to `outbox_events`               |
+| DLQ cleanup            | `oncebox.outbox.dlq.enabled`      | Deletes `RESOLVED` DLQ events older than the TTL                  |
+
+The inbox runs one job, the inbox cleanup.
+
+Cleanup jobs take a distributed lock in the `oncebox_jobs` table, so only one instance runs each of them at a time.
+See [Polling](polling.md#distributed-lock).
+
+## Scaling
+
+All instances poll the same table. `SKIP LOCKED` keeps them from blocking each other, but every instance still scans
+past the rows the others have locked, so the cost of finding a free batch grows with the number of instances. The
+practical limit depends on the number of event types, batch sizes and database load; measure it with the
+[load tests](https://github.com/dmitriy-iliyov/oncebox/tree/main/oncebox-tests/oncebox-load-tests) before relying on
+large numbers of instances.

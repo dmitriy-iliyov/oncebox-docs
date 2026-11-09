@@ -1,0 +1,143 @@
+---
+id: dlq
+title: Dead Letter Queue
+sidebar_position: 5
+---
+
+import DlqStateDiagram from '@site/src/components/DlqStateDiagram';
+import HttpMethod from '@site/src/components/HttpMethod';
+
+# Dead Letter Queue
+
+:::warning
+With the DLQ disabled, failed events stay in `outbox_events` with status `FAILED` and are not managed automatically.
+:::
+
+The dead letter queue keeps events that exhausted their retries in a separate table, `outbox_dlq_events`, until
+someone decides what to do with them. It is disabled by default:
+
+```yaml
+oncebox:
+  outbox:
+    dlq:
+      enabled: true
+```
+
+## DLQ state machine
+
+<DlqStateDiagram />
+
+| Status       | Meaning                                                                              |
+|--------------|--------------------------------------------------------------------------------------|
+| `MOVED`      | Moved from `outbox_events`, waiting for review                                       |
+| `TO_RETRY`   | Approved for another round; the transfer job moves it back to `outbox_events`        |
+| `RESOLVED`   | Given up for good; deleted by the DLQ cleanup after its TTL                          |
+| `IN_PROCESS` | Held by a transfer job; it cannot be updated or deleted through the API meanwhile    |
+
+## Transfer semantics
+
+Two jobs move events between the tables:
+
+- **transfer to** - moves `FAILED` events from `outbox_events` to `outbox_dlq_events` as `MOVED`;
+- **transfer from** - moves `TO_RETRY` events back to `outbox_events`, where they are delivered again.
+
+Each transfer is one database transaction:
+
+1. capture a batch in the source table and lock it;
+2. insert the batch into the target table;
+3. delete the batch from the source table.
+
+The batch is either in one table or in the other; it is never lost or duplicated by a transfer. The original event
+id is kept, so consumers with an inbox still recognise an event that was already consumed before it failed.
+
+## OutboxDlqHandler
+
+The handler is called with every batch moved into the DLQ. The default one logs the events; replace it to raise an
+alert or notify the team:
+
+```java
+public interface OutboxDlqHandler {
+    void handle(List<OutboxEvent> events);
+}
+```
+
+```java
+@Bean
+OutboxDlqHandler alertingDlqHandler(AlertClient alerts) {
+    return events -> alerts.send("oncebox: %d events moved to DLQ".formatted(events.size()));
+}
+```
+
+## REST API
+
+Add `oncebox-dlq-api` to expose the DLQ over HTTP. It reuses the dialect module you already have and is active when
+`oncebox.outbox.dlq.enabled` is `true`.
+
+```xml
+<dependency>
+    <groupId>io.github.dmitriy-iliyov</groupId>
+    <artifactId>oncebox-dlq-api</artifactId>
+    <version>2.0.0</version>
+</dependency>
+```
+
+:::danger
+The endpoints let anyone who reaches them read payloads, retry and delete events. Protect `/api/outbox-dlq/**` with
+Spring Security or keep it off public networks.
+:::
+
+All paths are under `/api/outbox-dlq/events`.
+
+| Method   | Path       | Input                                                              | Response                     |
+|----------|------------|--------------------------------------------------------------------|------------------------------|
+| <HttpMethod>GET</HttpMethod> | `/{id}`    | path `id`                                                          | the event                    |
+| <HttpMethod>GET</HttpMethod> | `/batch`   | query `status`, `eventType` (both optional), `batchNumber`, `batchSize` | a page of events        |
+| <HttpMethod>GET</HttpMethod> | `/count`   | query `status`, `eventType` (both optional)                        | the number of events         |
+| <HttpMethod>PATCH</HttpMethod> | `/{id}`    | path `id`, body `{"status": ...}`                                  | `204`                        |
+| <HttpMethod>PATCH</HttpMethod> | `/batch`   | body `ids` **or** `eventType`, and `status`                        | `BatchModificationResponse`  |
+| <HttpMethod>DELETE</HttpMethod> | `/{id}`    | path `id`                                                          | `204`                        |
+| <HttpMethod>DELETE</HttpMethod> | `/batch`   | body `ids` **or** `eventType`                                      | `BatchModificationResponse`  |
+
+Rules enforced by validation:
+
+- `status` and `eventType` filter `/batch` and `/count`; without either, all DLQ events are paged or counted;
+- `batchNumber` is zero-based; `batchSize` is between 10 and 100;
+- a batch body takes exactly one selector: either `ids` (at most 1000) or `eventType`;
+- the target status cannot be `IN_PROCESS`;
+- an event that a transfer job currently holds (`IN_PROCESS`) is not updated or deleted: a single-event request
+  answers `409`, a batch request skips it and reports it in the response.
+
+Retry every failed event of one type:
+
+```bash
+curl -X PATCH http://localhost:8080/api/outbox-dlq/events/batch \
+  -H 'Content-Type: application/json' \
+  -d '{"eventType": "order-created", "status": "TO_RETRY"}'
+```
+
+```json
+{
+  "requestedCount": 0,
+  "processedCount": 42,
+  "status": "POSSIBLE_PARTIAL_SUCCESS",
+  "message": "Some events might not have been updated because they were in IN_PROCESS status."
+}
+```
+
+`status` is `SUCCESS` or `PARTIAL_SUCCESS` when the request listed `ids`, and `POSSIBLE_PARTIAL_SUCCESS` when it
+selected by `eventType`, since the number of matching events is not known in advance.
+
+Errors are returned as RFC 9457 problem details (`application/problem+json`). The controller carries OpenAPI
+annotations, so the endpoints appear in Swagger UI through springdoc.
+
+A ready [Postman collection](https://github.com/dmitriy-iliyov/oncebox/blob/main/docs/postman/oncebox-dlq.postman_collection.json)
+covers every endpoint.
+
+## Cleanup
+
+`RESOLVED` events older than `oncebox.outbox.dlq.clean-up.ttl` (default `24h`) are deleted in batches under a
+[distributed lock](polling.md#distributed-lock).
+
+## Configuration
+
+See [Configuration](configuration.md#dead-letter-queue).

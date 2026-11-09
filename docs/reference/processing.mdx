@@ -1,0 +1,97 @@
+---
+id: processing
+title: Processing & Resilience
+sidebar_position: 4
+---
+
+import EventStateDiagram from '@site/src/components/EventStateDiagram';
+
+# Processing & Resilience
+
+## Event state machine
+
+<EventStateDiagram />
+
+| Status       | Meaning                                                                                     |
+|--------------|---------------------------------------------------------------------------------------------|
+| `PENDING`    | Stored and waiting until `next_retry_at` is due                                             |
+| `IN_PROCESS` | Captured by a poller and being sent. Only stuck recovery touches events in this status      |
+| `PROCESSED`  | Acknowledged by the broker; deleted by cleanup after the TTL                                |
+| `FAILED`     | Retries exhausted; moved to the DLQ when it is enabled, otherwise left for manual handling  |
+
+## Sending a batch
+
+A poller captures up to `batch-size` due events of its type, sends them to the broker and waits for every
+acknowledgement, at most `oncebox.outbox.sender.emergency-timeout` (default `120s`).
+
+The result is tracked per event, not per batch:
+
+- acknowledged events become `PROCESSED`;
+- rejected events, events that were not acknowledged within the timeout, and events that failed to serialize into a
+  message are counted as failed attempts;
+- an exception that prevents sending the batch at all (for example, the broker connection is down) fails the whole
+  batch.
+
+An event reported as both acknowledged and failed is treated as failed.
+
+## Retries and backoff
+
+Each failure increments `retry_count`. While attempts remain, the event goes back to `PENDING` with
+`next_retry_at = now + delay`; once they are exhausted, it becomes `FAILED`.
+
+`max-retries` is the total number of send attempts. With `max-retries: 3`, an event is sent at most three times: the
+third failure makes it `FAILED`.
+
+The delay after the n-th failed attempt is:
+
+```text
+delay(n) = backoff.delay × backoff.multiplier ^ n
+```
+
+With the defaults (`delay: 10s`, `multiplier: 3.0`, `max-retries: 3`):
+
+| Attempt | Outcome | Next attempt in |
+|---------|---------|-----------------|
+| 1       | fails   | 30s             |
+| 2       | fails   | 90s             |
+| 3       | fails   | - (`FAILED`)    |
+
+With `backoff.enabled: false`, the delay is zero: a failed event is due again immediately and is picked up by the next
+polling iteration of its type.
+
+`now` is the database clock, see [Core Concepts](core.mdx#the-database-clock).
+
+:::caution
+The delay has no upper bound. A large multiplier with many retries can push `next_retry_at` past the date range of
+the database. Keep `multiplier ^ max-retries × delay` within a sensible range.
+:::
+
+Retry settings are per event type and inherit from `oncebox.outbox.defaults`, see
+[Configuration](configuration.md#defaults-and-events).
+
+## Stuck event recovery
+
+An event stays `IN_PROCESS` if the instance that captured it crashes, is killed, or hangs while sending. The recovery
+job returns events that have been `IN_PROCESS` for longer than `max-batch-processing-time` (default `300s`) to
+`PENDING` **without counting an attempt**.
+
+If the original instance was only slow and finishes later, its outcome is not written: the rows were recaptured with a
+new lock token, see [fencing](core.mdx#fencing-with-a-lock-token).
+
+Keep `max-batch-processing-time` well above the time it takes to send a batch. It must be greater than
+`oncebox.outbox.sender.emergency-timeout` - the application fails to start otherwise - since recovering a batch that is
+still being sent produces duplicates.
+
+## Cleanup
+
+`PROCESSED` events older than `oncebox.outbox.clean-up.ttl` (default `24h`) are deleted in batches. The job holds a
+[distributed lock](polling.md#distributed-lock), so only one instance runs it at a time.
+
+:::warning
+With `clean-up.enabled: false`, processed events accumulate indefinitely.
+:::
+
+## Failed events
+
+Events that exhaust their retries become `FAILED`. With `oncebox.outbox.dlq.enabled: true` they are moved to the
+[Dead Letter Queue](dlq.mdx) for review. With the DLQ disabled they stay in `outbox_events` until you handle them.

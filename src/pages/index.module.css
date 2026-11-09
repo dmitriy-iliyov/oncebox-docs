@@ -1,0 +1,345 @@
+/* the hero carries the brand: the banner ground in both themes, the frog and the wordmark */
+.hero {
+  position: relative;
+  overflow: hidden;
+  padding: 3.75rem 0;
+  background: var(--ob-ground);
+  color: #ffffff;
+  border-bottom: 1px solid var(--ob-ground-line);
+}
+
+/* the brand ground carries an aurora: a noise field drawn on a tiny canvas, stretched over the hero and blurred so the
+   clouds have no edge */
+.aurora {
+  position: absolute;
+  left: -8%;
+  top: -12%;
+  width: 116%;
+  height: 124%;
+  filter: blur(36px) saturate(1.1);
+  pointer-events: none;
+}
+
+.heroInner {
+  position: relative;
+  z-index: 1;
+}
+
+.heroInner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: 3.5rem;
+  align-items: center;
+}
+
+.heroMain {
+  min-width: 0;
+}
+
+.openSource {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.4rem;
+  padding: 0.3rem 0.85rem;
+  border: 1px solid #3f3f46;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ob-zinc-400);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.openSource:hover {
+  border-color: var(--ob-zinc-500);
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.openSourceDot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: #6db33f;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+}
+
+.brandMark {
+  width: 4.8rem;
+  height: 4.8rem;
+  flex: none;
+}
+
+.brandName {
+  margin: 0;
+  font-family: 'Fredoka', 'Inter', system-ui, sans-serif;
+  font-size: clamp(3rem, 7vw, 4.8rem);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  color: #ffffff;
+}
+
+.heroTagline {
+  margin: 1.6rem 0 0;
+  font-size: clamp(1.3rem, 2.4vw, 1.75rem);
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--ob-zinc-400);
+  text-wrap: balance;
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-top: 2rem;
+}
+
+.heroCode {
+  min-width: 0;
+  border: 1px solid var(--ob-ground-line);
+  border-radius: 12px;
+  background: var(--ob-ground-raised);
+  overflow: hidden;
+}
+
+.heroCodeBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.45rem 0.6rem 0.45rem 1rem;
+  border-bottom: 1px solid var(--ob-ground-line);
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.8rem;
+  color: var(--ob-zinc-500);
+}
+
+.copyButton {
+  padding: 0.2rem 0.65rem;
+  border: 1px solid var(--ob-ground-line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ob-zinc-400);
+  font: inherit;
+  cursor: pointer;
+}
+
+.copyButton:hover {
+  border-color: var(--ob-zinc-500);
+  color: #ffffff;
+}
+
+.copyButton:focus-visible {
+  outline: 2px solid #6db33f;
+  outline-offset: 2px;
+}
+
+.heroCodeBody {
+  margin: 0;
+  padding: 1.1rem 1.2rem;
+  background: transparent;
+  font-size: 0.88rem;
+  line-height: 1.65;
+  overflow-x: auto;
+  border-radius: 0;
+}
+
+.buttonPrimary {
+  background: var(--ob-mark-on-ground);
+  border-color: var(--ob-mark-on-ground);
+  color: var(--ob-ground);
+}
+
+.buttonPrimary:hover {
+  background: #8fcb63;
+  border-color: #8fcb63;
+  color: var(--ob-ground);
+}
+
+.buttonGhost {
+  background: transparent;
+  border-color: #3f3f46;
+  color: #ffffff;
+}
+
+.buttonGitHub {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.buttonGhost:hover {
+  border-color: var(--ob-zinc-500);
+  color: #ffffff;
+}
+
+.sectionTitle {
+  margin: 0 0 2rem;
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+/* five steps in a row, joined by a line that runs through the numbers */
+.steps {
+  padding: 3.5rem 0 1rem;
+}
+
+.stepList {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stepList::before {
+  content: '';
+  position: absolute;
+  top: 1.1rem;
+  left: 1.1rem;
+  /* ends at the centre of the last circle: one column minus half a circle from the right */
+  right: calc((100% - 4 * 1.75rem) / 5 - 1.1rem);
+  height: 2px;
+  background: var(--ifm-color-emphasis-200);
+}
+
+.step {
+  position: relative;
+  min-width: 0;
+}
+
+/* above the line that joins the steps, so the line stops at each circle */
+.stepNumber {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 1.5px solid var(--ifm-color-emphasis-300);
+  border-radius: 50%;
+  /* an opaque page colour: Infima's light background is transparent, which would let the line show through */
+  background: var(--ob-page);
+  color: var(--ifm-color-emphasis-800);
+  font-weight: 600;
+}
+
+.stepTitle {
+  margin: 0.9rem 0 0.4rem;
+  font-size: 1.1rem;
+}
+
+.step p {
+  margin: 0;
+  font-size: 0.93rem;
+  color: var(--ifm-color-emphasis-800);
+}
+
+.features {
+  padding: 3rem 0 4rem;
+}
+
+.featureGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2.25rem 2.5rem;
+}
+
+.feature {
+  min-width: 0;
+}
+
+.feature p {
+  margin: 0;
+  color: var(--ifm-color-emphasis-800);
+}
+
+.featureTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-bottom: 0.7rem;
+}
+
+.featureTitle h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.featureIcon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 10px;
+  background: var(--ifm-color-emphasis-100);
+  color: var(--ifm-color-emphasis-700);
+}
+
+@media screen and (max-width: 996px) {
+  .hero {
+    padding: 2.5rem 0;
+  }
+
+  .heroInner {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2rem;
+  }
+
+  .featureGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stepList {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.4rem;
+  }
+
+  /* in a column the steps have different heights, so each step draws its own piece of the line down to the next circle */
+  .stepList::before {
+    display: none;
+  }
+
+  .step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: calc(1.1rem - 1px);
+    top: 1.1rem;
+    bottom: calc(-1.4rem - 1.1rem);
+    width: 2px;
+    background: var(--ifm-color-emphasis-200);
+  }
+
+  .step {
+    padding-left: 3.2rem;
+  }
+
+  .stepNumber {
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+
+  .stepTitle {
+    margin-top: 0.25rem;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .featureGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

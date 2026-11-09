@@ -1,0 +1,153 @@
+:root {
+  /* oncebox brand: the Spring green of the frog mark, zinc neutrals, Fredoka for headings and Inter for text */
+  --ifm-color-primary: #3f7a1f;
+  --ifm-color-primary-dark: #396e1c;
+  --ifm-color-primary-darker: #36681a;
+  --ifm-color-primary-darkest: #2c5516;
+  --ifm-color-primary-light: #458622;
+  --ifm-color-primary-lighter: #488c24;
+  --ifm-color-primary-lightest: #529f28;
+  --ifm-font-family-base: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --ifm-heading-font-family: 'Fredoka', 'Inter', system-ui, sans-serif;
+  --ifm-heading-font-weight: 600;
+  --ifm-code-font-size: 92%;
+  --ifm-color-content: #27272a;
+  --ifm-color-content-secondary: #52525b;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.08);
+  --ob-badge-text: #ffffff;
+  --ob-ground: #111114;
+  --ob-ground-raised: #1a1a1e;
+  --ob-ground-line: #2d2e34;
+  --ob-zinc-400: #a1a1aa;
+  --ob-zinc-500: #71717a;
+  --ob-mark-on-ground: #6db33f;
+  --ob-page: #ffffff;
+  --ifm-table-head-background: #f4f4f5;
+  --ifm-table-border-color: #e4e4e7;
+  --ifm-footer-background-color: #111114;
+}
+
+html[data-theme='dark'] {
+  --ifm-color-primary: #6db33f;
+  --ifm-color-primary-dark: #62a139;
+  --ifm-color-primary-darker: #5d9836;
+  --ifm-color-primary-darkest: #4c7d2c;
+  --ifm-color-primary-light: #79c04b;
+  --ifm-color-primary-lighter: #80c354;
+  --ifm-color-primary-lightest: #94cc6e;
+  --ifm-background-color: #111114;
+  --ifm-background-surface-color: #1a1a1e;
+  --ifm-color-content: #e4e4e7;
+  --ifm-color-content-secondary: #a1a1aa;
+  --ifm-toc-border-color: #2d2e34;
+  --ifm-hr-border-color: #2d2e34;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+  --ob-badge-text: #111114;
+  --ob-page: #111114;
+  --ifm-table-head-background: #1a1a1e;
+  --ifm-table-border-color: #2d2e34;
+  --ifm-footer-background-color: #0b0b0d;
+}
+
+.navbar__title {
+  font-family: 'Fredoka', 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 1.2rem;
+}
+
+.navbar__logo {
+  height: 1.6rem;
+}
+
+[data-theme='dark'] .navbar {
+  border-bottom: 1px solid var(--ob-ground-line);
+}
+
+.markdown table {
+  display: table;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* tables: a thin full grid, compact cells, a neutral header */
+.markdown table th,
+.markdown table td {
+  border: 1px solid var(--ifm-table-border-color);
+  padding: 6px 13px;
+}
+
+.markdown table th {
+  font-weight: 600;
+  text-align: left;
+  background-color: var(--ifm-table-head-background);
+}
+
+/* every body row on the same ground: Infima stripes even rows, and its dark theme sets the stripe from html[data-theme] */
+.markdown table thead,
+.markdown table tr,
+.markdown table tr:nth-child(2n) {
+  background-color: transparent;
+}
+
+.markdown img {
+  border-radius: 8px;
+}
+
+
+
+/* HTTP method pills in API tables, tinted like Swagger UI */
+.ob-http-method {
+  display: inline-block;
+  min-width: 4.6rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--ob-method-color);
+  border-radius: 0.35rem;
+  background: color-mix(in srgb, var(--ob-method-color) 14%, transparent);
+  color: var(--ob-method-color);
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.ob-http-method--get { --ob-method-color: #1f6fd1; }
+.ob-http-method--post { --ob-method-color: #13854e; }
+.ob-http-method--put { --ob-method-color: #b86e00; }
+.ob-http-method--patch { --ob-method-color: #0d8a7d; }
+.ob-http-method--delete { --ob-method-color: #d12f2f; }
+
+[data-theme='dark'] .ob-http-method--get { --ob-method-color: #61affe; }
+[data-theme='dark'] .ob-http-method--post { --ob-method-color: #49cc90; }
+[data-theme='dark'] .ob-http-method--put { --ob-method-color: #fca130; }
+[data-theme='dark'] .ob-http-method--patch { --ob-method-color: #50e3c2; }
+[data-theme='dark'] .ob-http-method--delete { --ob-method-color: #f93e3e; }
+
+/* the release badge in the navbar, centred on the line of the links next to it */
+.ob-version-item {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+}
+
+.ob-version {
+  display: flex;
+  align-items: center;
+  padding: 0 0.25rem;
+  line-height: 0;
+}
+
+.ob-version img {
+  display: block;
+  border-radius: 4px;
+}
+
+/* Infima sets its own slate background on the dark footer style; keep the footer on the brand ground instead */
+.footer--dark {
+  --ifm-footer-background-color: var(--ob-ground);
+  border-top: 1px solid var(--ob-ground-line);
+}
+
+html[data-theme='dark'] .footer--dark {
+  --ifm-footer-background-color: #0b0b0d;
+}
