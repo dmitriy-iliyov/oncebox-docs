@@ -51,6 +51,35 @@ const config = {
     ],
   ],
 
+  // llms.txt (a map of the docs) and llms-full.txt (all docs in one file) for LLMs and coding agents, see llmstxt.org
+  plugins: [
+    [
+      'docusaurus-plugin-llms',
+      {
+        title: 'oncebox',
+        description: 'Transactional Outbox and Inbox for Spring Boot: events stored in the same transaction as business '
+          + 'data, published to Apache Kafka or RabbitMQ with per-type retries, backoff and a DLQ, and deduplicated on '
+          + 'the receiving side through an inbox.',
+        generateLLMsTxt: true,
+        generateLLMsFullTxt: true,
+        docsDir: 'docs',
+        includeBlog: false,
+        excludeImports: true,
+        removeDuplicateHeadings: true,
+        includeOrder: [
+          'intro.md',
+          'quickstart.md',
+          'reference/index.md',
+          'reference/guarantees.md',
+          'reference/*',
+          'examples.md',
+          'agent-skill.md',
+          '*',
+        ],
+      },
+    ],
+  ],
+
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
