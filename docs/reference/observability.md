@@ -1,6 +1,8 @@
 ---
 id: observability
-title: Observability
+title: "Outbox and Inbox Metrics with Micrometer"
+sidebar_label: "Observability"
+description: "oncebox metrics for Prometheus through Micrometer: outbox, DLQ and inbox gauges, counters and timers, what to alert on, and ready Grafana dashboards."
 sidebar_position: 10
 ---
 

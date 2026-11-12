@@ -1,6 +1,8 @@
 ---
 id: inbox
-title: Inbox
+title: "Inbox Pattern: Idempotent Consumer for Spring"
+sidebar_label: "Inbox"
+description: "Deduplicate redelivered events with the oncebox inbox: transactional and non-transactional idempotent consumers, deserialization, caching and cleanup."
 sidebar_position: 6
 ---
 

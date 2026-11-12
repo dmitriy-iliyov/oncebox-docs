@@ -1,6 +1,8 @@
 ---
 id: index
-title: Reference
+title: "oncebox Reference Documentation"
+sidebar_label: "Reference"
+description: "Reference for oncebox: architecture, delivery guarantees, publishing, processing, DLQ, inbox, messaging, persistence, polling, metrics and configuration."
 slug: /reference/
 ---
 
@@ -18,6 +20,8 @@ The reference describes how oncebox works and every setting it exposes.
 | [Inbox](inbox.md) | Idempotent consumers, choosing between them, cache, deserialization |
 | [Messaging Integration](messaging.md) | Kafka and RabbitMQ senders, headers, routing, broker settings on both sides |
 | [Persistence](persistence.md) | Databases, dialect modules, table schemas, MySQL isolation level |
+| [Schema Migrations](schema.md) | Creating and upgrading the tables with Flyway, Liquibase or at startup |
 | [Polling](polling.md) | Fixed and adaptive strategies, thread pool sizing, distributed lock |
 | [Observability](observability.md) | Metrics and Grafana dashboards |
 | [Configuration](configuration.md) | Every property with its default |
+| [Configuration Recipes](recipes.md) | Ready configurations: several event types, RabbitMQ, production, inbox, both sides, local development |

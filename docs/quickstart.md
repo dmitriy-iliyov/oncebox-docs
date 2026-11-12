@@ -1,6 +1,8 @@
 ---
 id: quickstart
-title: Quickstart
+title: "Quickstart: Spring Boot Outbox with Kafka, RabbitMQ"
+sidebar_label: "Quickstart"
+description: "Add oncebox to a Spring Boot service: dependencies, tables, an event type, publishing in a transaction and consuming with deduplication through the inbox."
 sidebar_position: 2
 ---
 
@@ -40,6 +42,36 @@ The starter, exactly one database dialect and exactly one broker module are requ
 :::important
 The starter does not bundle a database dialect. Without one of `oncebox-postgresql`, `oncebox-mysql` or
 `oncebox-oracle` there is no repository implementation to wire, and the application context fails to start.
+:::
+
+The tables are created by oncebox's own migrations. This page applies them with Flyway; Liquibase, a dev mode without
+a migration tool, and managing them yourself are in [Schema Migrations](reference/schema.md).
+
+```xml
+<dependency>
+    <groupId>io.github.dmitriy-iliyov</groupId>
+    <artifactId>oncebox-flyway</artifactId>
+    <version>2.0.0</version>
+</dependency>
+
+<!-- the versions come from Spring Boot -->
+<dependency>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-core</artifactId>
+</dependency>
+
+<!-- the Flyway module of your database, exactly one of:
+     flyway-database-postgresql, flyway-mysql, flyway-database-oracle -->
+<dependency>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-database-postgresql</artifactId>
+</dependency>
+```
+
+:::warning
+`flyway-core` also switches on Spring Boot's own Flyway. If the application does not use Flyway and its database
+already has tables, set `spring.flyway.enabled: false`, or Boot's Flyway refuses the non-empty schema - see
+[Schema Migrations](reference/schema.md#flyway).
 :::
 
 Optional modules:
@@ -89,10 +121,13 @@ public class PublisherApplication {
 
 ### 3. Configure
 
-Every event type you publish is declared under `oncebox.outbox.events` together with its destination.
+Every event type you publish is declared under `oncebox.outbox.events` together with its destination, and
+`oncebox.schema.mode` tells oncebox to create its tables.
 
 ```yaml
 oncebox:
+  schema:
+    mode: flyway               # default none: no tables are created
   outbox:
     sender:
       type: kafka              # or rabbit
@@ -160,6 +195,21 @@ See [Publishing Events](reference/publishing.md) for the details.
     <version>2.0.0</version>
 </dependency>
 
+<!-- creates inbox_events, as on the publisher side -->
+<dependency>
+    <groupId>io.github.dmitriy-iliyov</groupId>
+    <artifactId>oncebox-flyway</artifactId>
+    <version>2.0.0</version>
+</dependency>
+<dependency>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-core</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-database-postgresql</artifactId>
+</dependency>
+
 <!-- optional: cache consumed ids through Spring's CacheManager -->
 <dependency>
     <groupId>io.github.dmitriy-iliyov</groupId>
@@ -174,6 +224,8 @@ The inbox is off by default; switch it on and turn the outbox off if this servic
 
 ```yaml
 oncebox:
+  schema:
+    mode: flyway
   outbox:
     enabled: false
   inbox:
@@ -253,5 +305,7 @@ annotation fails the context with `NoUniqueBeanDefinitionException`. Which one t
 ## What next
 
 - Run the [example project](examples.md) - producer, consumer and traffic generator in Docker Compose.
-- Read [Delivery Guarantees](reference/guarantees.md) before going to production.
+- Read [Delivery Guarantees](reference/guarantees.md) and go through the [Production Checklist](production.md) before
+  going to production.
+- Something does not work? See [Troubleshooting](troubleshooting.md).
 - Tune retries and polling in the [Configuration](reference/configuration.md) reference.

@@ -1,6 +1,8 @@
 ---
 id: dlq
-title: Dead Letter Queue
+title: "Dead Letter Queue for Outbox Events"
+sidebar_label: "Dead Letter Queue"
+description: "The oncebox dead letter queue: where events that exhausted their retries go, how they are moved back or resolved, OutboxDlqHandler and the REST API."
 sidebar_position: 5
 ---
 
@@ -127,8 +129,20 @@ curl -X PATCH http://localhost:8080/api/outbox-dlq/events/batch \
 `status` is `SUCCESS` or `PARTIAL_SUCCESS` when the request listed `ids`, and `POSSIBLE_PARTIAL_SUCCESS` when it
 selected by `eventType`, since the number of matching events is not known in advance.
 
-Errors are returned as RFC 9457 problem details (`application/problem+json`). The controller carries OpenAPI
-annotations, so the endpoints appear in Swagger UI through springdoc.
+Errors are returned as RFC 9457 problem details (`application/problem+json`).
+
+The controller carries OpenAPI annotations, but `oncebox-dlq-api` does not bring springdoc into the application:
+whether to expose Swagger UI is your decision. With springdoc on the classpath the endpoints appear in it, fully
+documented; without it the API works the same and nothing is published at `/swagger-ui.html` or `/v3/api-docs`.
+
+```xml
+<!-- optional: Swagger UI and /v3/api-docs, the DLQ endpoints included -->
+<dependency>
+    <groupId>org.springdoc</groupId>
+    <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+    <version>2.8.17</version>
+</dependency>
+```
 
 A ready [Postman collection](https://github.com/dmitriy-iliyov/oncebox/blob/main/docs/postman/oncebox-dlq.postman_collection.json)
 covers every endpoint.

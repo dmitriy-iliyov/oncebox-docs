@@ -1,6 +1,8 @@
 ---
 id: configuration
-title: Configuration
+title: "oncebox Configuration Properties"
+sidebar_label: "Configuration"
+description: "Every oncebox configuration property with its default: outbox sender, events, retries and backoff, stuck recovery, cleanup, DLQ, inbox, cache and metrics."
 sidebar_position: 11
 ---
 
@@ -13,8 +15,8 @@ All properties live under the `oncebox` prefix. Durations take Spring Boot's for
 ```yaml
 oncebox:
   thread-pool-size: 5
-  tables:
-    auto-create: true
+  schema:
+    mode: flyway
   distributed-lock:
     resolve-by-polling-properties: true
     lock-at-least-for: 1s
@@ -24,7 +26,7 @@ oncebox:
 | Property                                         | Description                                                                         | Default                        |
 |--------------------------------------------------|-------------------------------------------------------------------------------------|--------------------------------|
 | `thread-pool-size`                               | Threads shared by all pollers and jobs, see [sizing](polling.md#thread-pool)         | `min(available processors, 5)` |
-| `tables.auto-create`                             | Create the tables and indexes at startup, see [Persistence](persistence.md#tables)  | `true`                         |
+| `schema.mode`                                    | How the tables are created: `flyway`, `liquibase`, `dev` or `none`, see [Schema Migrations](schema.md) | `none`                         |
 | `distributed-lock.resolve-by-polling-properties` | Derive lock times from each job's polling settings                                  | `true`                         |
 | `distributed-lock.lock-at-least-for`             | Minimum lock time when not derived                                                  | `1s`                           |
 | `distributed-lock.lock-at-most-for`              | Lock expiry when not derived                                                        | `1m`                           |
@@ -321,4 +323,5 @@ oncebox:
 
 ## Full examples
 
-Complete outbox-only and inbox-only configurations are on the [Examples](../examples.md) page.
+Configurations for common setups - several event types, RabbitMQ, production, inbox, both sides in one service,
+local development - are in [Configuration Recipes](recipes.md).

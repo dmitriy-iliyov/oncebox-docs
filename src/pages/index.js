@@ -2,6 +2,7 @@ import {useEffect, useRef, useState} from 'react';
 import clsx from 'clsx';
 import Link from '@docusaurus/Link';
 import Layout from '@theme/Layout';
+import Head from '@docusaurus/Head';
 import Heading from '@theme/Heading';
 import useBaseUrl from '@docusaurus/useBaseUrl';
 import {Highlight} from 'prism-react-renderer';
@@ -112,7 +113,7 @@ const features = [
   {
     icon: 'database',
     title: 'Your database',
-    text: 'PostgreSQL 16+, MySQL 8.0.13+ and Oracle 23+, each with a dialect module of its own. The tables can be created on startup or left to your migrations.',
+    text: 'PostgreSQL 16+, MySQL 8.0.13+ and Oracle 23+, each with a dialect module of its own. The tables come as versioned migrations, applied with Flyway or Liquibase or left to your own.',
   },
   {
     icon: 'broker',
@@ -340,11 +341,30 @@ function Hero() {
   );
 }
 
+// structured data for search engines, see schema.org/SoftwareSourceCode
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareSourceCode',
+  name: 'oncebox',
+  description: 'Transactional outbox and inbox for Spring Boot: events stored in the same transaction as business data, '
+    + 'published to Apache Kafka or RabbitMQ with retries, backoff and a dead letter queue, and deduplicated on the '
+    + 'receiving side.',
+  url: 'https://dmitriy-iliyov.github.io/oncebox-docs/',
+  codeRepository: 'https://github.com/dmitriy-iliyov/oncebox',
+  programmingLanguage: 'Java',
+  runtimePlatform: 'Spring Boot',
+  license: 'https://www.apache.org/licenses/LICENSE-2.0',
+  keywords: 'transactional outbox, inbox pattern, idempotent consumer, Spring Boot, Kafka, RabbitMQ, PostgreSQL, MySQL, Oracle',
+};
+
 export default function Home() {
   return (
     <Layout
       title="Transactional Outbox and Inbox for Spring Boot"
       description="oncebox publishes events reliably from a Spring Boot service through a polled outbox table and deduplicates them on the receiving side through an inbox.">
+      <Head>
+        <script type="application/ld+json">{JSON.stringify(structuredData)}</script>
+      </Head>
       <Hero />
       <main>
         <section className={styles.steps}>

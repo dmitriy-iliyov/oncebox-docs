@@ -1,6 +1,8 @@
 ---
 id: polling
-title: Polling
+title: "Polling Strategies, Thread Pool and Distributed Lock"
+sidebar_label: "Polling"
+description: "Fixed and adaptive polling in oncebox, sizing the shared thread pool for event types and background jobs, and the distributed lock of the cleanup jobs."
 sidebar_position: 9
 ---
 

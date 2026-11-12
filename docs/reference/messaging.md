@@ -1,6 +1,8 @@
 ---
 id: messaging
-title: Messaging Integration
+title: "Kafka and RabbitMQ Integration"
+sidebar_label: "Messaging Integration"
+description: "How oncebox publishes to Apache Kafka and RabbitMQ: headers, routing, acknowledgements, recommended producer settings and consumer acknowledgement."
 sidebar_position: 7
 ---
 

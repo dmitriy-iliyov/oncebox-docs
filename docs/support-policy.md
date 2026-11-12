@@ -1,6 +1,8 @@
 ---
 id: support-policy
-title: Support Policy
+title: "oncebox Support Policy"
+sidebar_label: "Support Policy"
+description: "Which oncebox release lines receive fixes, security fixes included, and how to report a vulnerability privately through GitHub with the details we need."
 sidebar_position: 6
 ---
 

@@ -1,6 +1,8 @@
 ---
 id: intro
-title: Introduction
+title: "What is oncebox: Outbox and Inbox for Spring Boot"
+sidebar_label: "Introduction"
+description: "oncebox is a Spring Boot library for the transactional outbox and inbox patterns: reliable event publishing to Kafka or RabbitMQ and deduplicated consumption."
 slug: /
 sidebar_position: 1
 ---
@@ -55,6 +57,8 @@ simple, portable and explicit.
 | `oncebox-oracle`      | one of   | Oracle repositories                                                  |
 | `oncebox-kafka`       | one of   | Kafka sender (publisher side)                                        |
 | `oncebox-rabbit`      | one of   | RabbitMQ sender (publisher side)                                     |
+| `oncebox-flyway`      | no       | Applies the oncebox migrations with Flyway, see [Schema Migrations](reference/schema.md) |
+| `oncebox-liquibase`   | no       | Applies the oncebox migrations with Liquibase                         |
 | `oncebox-aop`         | no       | `@OutboxPublish` support, pulled in by the starter; needs `spring-boot-starter-aop` |
 | `oncebox-dlq-api`     | no       | REST API for the dead letter queue                                   |
 | `oncebox-inbox-cache` | no       | Caching of consumed event ids through Spring's `CacheManager`         |

@@ -1,6 +1,8 @@
 ---
 id: contributing
-title: Contributing
+title: "Contributing to oncebox"
+sidebar_label: "Contributing"
+description: "How to contribute to oncebox: building the project, running the test suites, ground rules for pull requests, schema migrations and the documentation."
 sidebar_position: 5
 ---
 
@@ -33,6 +35,8 @@ The infrastructure integration tests, the end-to-end tests and the classpath iso
 
 - One change per pull request, with tests; a bug fix comes with a test that fails without it.
 - SQL changes go to all three dialect modules, and schema changes are synced to `oncebox-test-fixtures`.
+- A schema change is a new migration for every dialect, never an edit of a released one. One script runs under
+  Flyway, Liquibase and `DEV` at once; follow the rules in [Writing a migration](reference/schema.md#writing-a-migration).
 - A user-visible change updates the documentation.
 
 ## Documentation

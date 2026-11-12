@@ -1,6 +1,8 @@
 ---
 id: examples
-title: Examples
+title: "Example Project: Outbox and Inbox in Docker Compose"
+sidebar_label: "Examples"
+description: "A runnable oncebox example: an order service publishing through the outbox, a consumer deduplicating through the inbox, Kafka or RabbitMQ, Grafana."
 sidebar_position: 3
 ---
 
@@ -8,192 +10,70 @@ sidebar_position: 3
 
 ## Example project
 
-[`oncebox-example`](https://github.com/dmitriy-iliyov/oncebox/tree/main/oncebox-example) is a complete setup in Docker
-Compose:
+[`oncebox-example`](https://github.com/dmitriy-iliyov/oncebox/tree/main/oncebox-example) runs a publisher, a consumer
+and a load generator in Docker Compose, on any of the three databases and either broker:
 
 | Service                      | Role                                                         |
 |------------------------------|--------------------------------------------------------------|
-| `oncebox-producer-example`   | Publishes order events through the outbox                    |
+| `oncebox-producer-example`   | An order API that publishes order events through the outbox  |
 | `oncebox-consumer-example`   | Consumes them through the inbox                              |
-| `oncebox-traffic-generator`  | Generates load against the producer                          |
+| `oncebox-traffic-generator`  | A Gatling scenario that generates load against the producer  |
 | `oncebox-shared-contract`    | Event DTOs shared by both sides                              |
 | Prometheus and Grafana       | Metrics, with the oncebox dashboards provisioned             |
 
-Start it by following the [example README](https://github.com/dmitriy-iliyov/oncebox/tree/main/oncebox-example).
+### What it shows
 
-## Outbox-only
+The producer's `OrderService` publishes in each of the three ways oncebox offers:
 
-Minimal - the DLQ and metrics stay disabled, everything else uses defaults:
+```java
+// the return value is the payload; a List result becomes one event per element
+@Transactional
+@OutboxPublish(eventType = "create-order")
+public OrderDto save(OrderCreateDto dto) { ... }
 
-```yaml
-oncebox:
-  outbox:
-    sender:
-      type: kafka
-    events:
-      order-created:
-        topic: orders
+// the payload is picked from the arguments with SpEL
+@Transactional
+@OutboxPublish(eventType = "delete-order", payload = "#id")
+public void delete(Long id) { ... }
+
+// programmatic, for a payload the method does not return
+@Transactional
+public OrderDto update(OrderUpdateDto dto) {
+    ...
+    outboxPublisher.publish("update-order", mapper.toDto(order));
+    return mapper.toDto(order);
+}
 ```
 
-All features:
+On Kafka the consumer reads `orders` one message at a time and `orders.created` in batches, both through
+`@TransactionalConsumer`; Redis backs the inbox cache.
 
-```yaml
-oncebox:
-  outbox:
-    sender:
-      type: kafka
-    events:
-      order-created:
-        topic: orders
-    dlq:
-      enabled: true
-    metrics:
-      enabled: true
-      gauge:
-        enabled: true
+Both services use `oncebox.schema.mode: flyway`, in the two situations an application can be in. The producer has
+Flyway migrations of its own for the orders table, and its Flyway and oncebox's run side by side with separate
+history tables. The consumer has none, so it switches Spring Boot's Flyway off with `spring.flyway.enabled: false`.
+
+### Running it
+
+From `oncebox-example`, build once, then start the stack with one broker and one database profile:
+
+```bash
+docker compose build
+COMPOSE_PROFILES=kafka,postgres,test docker compose up
 ```
 
-Full, with every default spelled out:
+Use `rabbit` instead of `kafka`, and `mysql` or `oracle` instead of `postgres`. The `test` profile adds the traffic
+generator, Prometheus and Grafana. Keep the same `COMPOSE_PROFILES` for every `docker compose` command of one run:
+the profiles are passed to the services, so a different value recreates the producer and consumer containers.
 
-```yaml
-oncebox:
-  thread-pool-size: 5
-  tables:
-    auto-create: true
+The services take a minute or two to start. Grafana is at http://localhost:3000 (`admin` / `admin`) with the outbox
+and inbox dashboards loaded; the producer API is on port `8080`. The
+[example README](https://github.com/dmitriy-iliyov/oncebox/tree/main/oncebox-example) lists every port.
 
-  outbox:
-    sender:
-      type: kafka
-      emergency-timeout: 120s
+To check that nothing was lost, compare counters rather than table rows - both services clean up after `10m`:
+requests the generator completed, `outbox_events_rate_total{status="processed"}` on the producer and
+`inbox_events_total{type="consumed"}` on the consumer should be equal, with the DLQ empty.
 
-    defaults:
-      batch-size: 200
-      polling:
-        type: adaptive
-        initial-delay: 5m
-        min-fixed-delay: 250ms
-        max-fixed-delay: 1m
-        multiplier: 1.5
-      max-retries: 3
-      backoff:
-        enabled: true
-        delay: 10s
-        multiplier: 3.0
+## Configuration recipes
 
-    events:
-      order-created:
-        topic: orders
-
-    stuck-recovery:
-      batch-size: 500
-      max-batch-processing-time: 300s
-      polling:
-        type: adaptive
-        initial-delay: 5m
-        min-fixed-delay: 1s
-        max-fixed-delay: 1m
-        multiplier: 4.0
-
-    clean-up:
-      enabled: true
-      batch-size: 500
-      ttl: 24h
-      polling:
-        type: adaptive
-        initial-delay: 5m
-        min-fixed-delay: 5s
-        max-fixed-delay: 1m
-        multiplier: 2.0
-
-    dlq:
-      enabled: true
-      batch-size: 500
-      polling:
-        type: adaptive
-        initial-delay: 5m
-        min-fixed-delay: 1s
-        max-fixed-delay: 2m
-        multiplier: 10.0
-
-    metrics:
-      enabled: true
-      gauge:
-        enabled: true
-        cache:
-          ttls: [60s, 60s, 60s]
-```
-
-## Inbox-only
-
-Minimal - cleanup is on, the cache is on once `cache-name` is set, metrics are off:
-
-```yaml
-oncebox:
-  outbox:
-    enabled: false
-  inbox:
-    enabled: true
-    source:
-      type: kafka
-    mappings:
-      order-created: "com.example.OrderCreatedDto"
-    cache:
-      cache-name: "<service-name>:oncebox:inbox"
-```
-
-All features:
-
-```yaml
-oncebox:
-  outbox:
-    enabled: false
-  inbox:
-    enabled: true
-    source:
-      type: kafka
-    mappings:
-      order-created: "com.example.OrderCreatedDto"
-    cache:
-      cache-name: "<service-name>:oncebox:inbox"
-    metrics:
-      enabled: true
-```
-
-Full:
-
-```yaml
-oncebox:
-  thread-pool-size: 2
-  tables:
-    auto-create: true
-
-  outbox:
-    enabled: false
-
-  inbox:
-    enabled: true
-    source:
-      type: kafka
-    mappings:
-      order-created: "com.example.OrderCreatedDto"
-    clean-up:
-      enabled: true
-      batch-size: 500
-      ttl: 24h
-      polling:
-        type: adaptive
-        initial-delay: 5m
-        min-fixed-delay: 5s
-        max-fixed-delay: 1m
-        multiplier: 2.0
-    cache:
-      enabled: true
-      cache-name: "<service-name>:oncebox:inbox"
-    metrics:
-      enabled: true
-```
-
-## Publisher and consumer in one service
-
-Both halves can run in the same application: declare `outbox.events` for what the service publishes and
-`inbox.mappings` for what it consumes. Size `thread-pool-size` for both, see [Polling](reference/polling.md#thread-pool).
+Ready configurations for common setups - several event types, RabbitMQ, production, an inbox, both sides in one
+service, local development - are in [Configuration Recipes](reference/recipes.md).

@@ -1,6 +1,8 @@
 ---
 id: persistence
-title: Persistence
+title: "Outbox Tables on PostgreSQL, MySQL and Oracle"
+sidebar_label: "Persistence"
+description: "Databases supported by oncebox, dialect modules, the outbox, DLQ, inbox and jobs table schemas, the JdbcTemplate it uses and the MySQL isolation level."
 sidebar_position: 8
 ---
 
@@ -57,16 +59,17 @@ own `jdbcTemplate`, and every `JdbcTemplate` injected by type in the application
 
 ## Tables
 
-| Table               | Created when                        | Contents                                         |
+| Table               | Needed when                         | Contents                                         |
 |---------------------|-------------------------------------|--------------------------------------------------|
 | `outbox_events`     | the outbox is enabled               | Events waiting for, in, or after delivery        |
 | `oncebox_jobs`      | outbox or inbox cleanup is enabled  | Distributed locks of the cleanup jobs            |
 | `outbox_dlq_events` | the outbox and its DLQ are enabled  | Events that exhausted their retries              |
 | `inbox_events`      | the inbox is enabled                | Ids of consumed events                           |
 
-With `oncebox.tables.auto-create: true` (the default) the tables and indexes are created at startup if they do not
-exist. Set it to `false` to manage the schema with Flyway or Liquibase; the reference DDL for every dialect is in
-[`oncebox-starter/src/main/resources`](https://github.com/dmitriy-iliyov/oncebox/tree/main/oncebox-starter/src/main/resources).
+How the tables get created is set by `oncebox.schema.mode`: oncebox applies its migrations with Flyway, with
+Liquibase or straight through JDBC, or leaves the schema to you, which is the default. See
+[Schema Migrations](schema.md). The DDL below is the PostgreSQL version; the migrations for every dialect are in
+[`oncebox-starter/src/main/resources/db/oncebox`](https://github.com/dmitriy-iliyov/oncebox/tree/main/oncebox-starter/src/main/resources/db/oncebox).
 
 ### outbox_events
 

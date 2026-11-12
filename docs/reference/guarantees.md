@@ -1,6 +1,8 @@
 ---
 id: guarantees
-title: Delivery Guarantees
+title: "Delivery Guarantees: At-Least-Once, Effectively-Once"
+sidebar_label: "Delivery Guarantees"
+description: "What oncebox guarantees and in which failure: at-least-once publishing, effectively-once and at-most-once consumption, duplicates, ordering and limits."
 sidebar_position: 2
 ---
 
@@ -8,12 +10,12 @@ sidebar_position: 2
 
 ## Summary
 
-| Side      | Setup                                   | Guarantee            |
-|-----------|-----------------------------------------|----------------------|
-| Publisher | outbox                                  | At-least-once        |
-| Consumer  | `TransactionalIdempotentConsumer`       | Effectively-once     |
-| Consumer  | `NonTransactionalIdempotentConsumer`    | At-most-once         |
-| Consumer  | plain listener, no inbox                | Duplicates possible  |
+| Side      | Setup                                   | Guarantee                           |
+|-----------|-----------------------------------------|-------------------------------------|
+| Publisher | outbox                                  | At-least-once                       |
+| Consumer  | `TransactionalIdempotentConsumer`       | Effectively-once                    |
+| Consumer  | `NonTransactionalIdempotentConsumer`    | At-most-once                        |
+| Consumer  | listener without an inbox               | At-least-once, duplicates reach it  |
 
 ## Transactional writes
 

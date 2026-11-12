@@ -1,6 +1,8 @@
 ---
 id: publishing
-title: Publishing Events
+title: "Publishing Events with OutboxPublisher"
+sidebar_label: "Publishing Events"
+description: "Store events in the business transaction with OutboxPublisher or the @OutboxPublish annotation: transactions, SpEL payloads, serialization and event ids."
 sidebar_position: 3
 ---
 

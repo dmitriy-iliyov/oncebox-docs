@@ -1,6 +1,8 @@
 ---
 id: agent-skill
-title: Agent Skill
+title: "oncebox Skill for AI Coding Agents"
+sidebar_label: "Agent Skill"
+description: "An agent skill that teaches Claude Code and other coding agents to use oncebox correctly: the modules to add, which consumer to inject and the traps."
 sidebar_position: 4
 ---
 
